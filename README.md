@@ -1,2 +1,3 @@
 # school_attendance
-chronic absenteeism in NYC public schools
+
+This project cleans and merges data from Open NYC data to visualize chronic absenteeism in NYC public schools. 
