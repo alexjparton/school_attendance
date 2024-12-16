@@ -8,8 +8,7 @@
 # same for any school in any given year, regardless of grade. Open NYC data 
 # does not have demographic data disaggregated by grade. Only the chronic absenteeism
 # rates are available by grade level within schools. 
-# Also NOTE: chronic absenteeism data is available from 2013-2022. demographic data 
-# is available from 2013-2021 (one year less). 
+ 
 
 ### Setup ####
 
@@ -33,38 +32,100 @@ library(haven)
 attendance_13_18 <- read.csv("school_attendance_2013-2018.csv")
   # The latter data was released in an Excel workbook with the demographic categories in different sheets
   # I saved them as individual .csv files and will glue them back together so it mirrors the former data
-attendance_18_22_all <- read.csv("school_attendance_2018-2023_all_students.csv")
-attendance_18_22_SWD <- read.csv("school_attendance_2018-2023_SWD.csv")
-attendance_18_22_ethnicity <- read.csv("school_attendance_2018-2023_ethnicity.csv")
-attendance_18_22_gender <- read.csv("school_attendance_2018-2023_gender.csv")
-attendance_18_22_poverty <- read.csv("school_attendance_2018-2023_poverty.csv")
-attendance_18_22_ELL <- read.csv("school_attendance_2018-2023_ELL.csv")
-attendance_18_22_STH <- read.csv("school_attendance_2018-2023_STH.csv")
+attendance_18_22_all <- read.csv("school_attendance_2018-2022_all_students.csv")
+attendance_18_22_SWD <- read.csv("school_attendance_2018-2022_SWD.csv")
+attendance_18_22_ethnicity <- read.csv("school_attendance_2018-2022_ethnicity.csv")
+attendance_18_22_gender <- read.csv("school_attendance_2018-2022_gender.csv")
+attendance_18_22_poverty <- read.csv("school_attendance_2018-2022_poverty.csv")
+attendance_18_22_ELL <- read.csv("school_attendance_2018-2022_ELL.csv")
+attendance_18_22_STH <- read.csv("school_attendance_2018-2022_STH.csv")
 
   # list of data frames: add a column for demographic category and bind together
 data_frames <- list(attendance_18_22_all, attendance_18_22_SWD,attendance_18_22_ethnicity,
                     attendance_18_22_gender, attendance_18_22_poverty, attendance_18_22_ELL, 
                     attendance_18_22_STH)
   # names of demographic categories
-names <- list("all_students", "SWD", "ethnicity", "gender", "poverty", "ELL", "STH")
+cat_names <- list("all_students", "SWD", "ethnicity", "gender", "poverty", "ELL", "STH")
   # function to add the demographic category
 add_category_column <- function(df, category) {
     df %>%
       mutate(demographic_category = category)
   }
   # apply the function to each data frame in the list
-modified_dfs <- modified_dfs <- map2(data_frames, names, add_category_column)
+modified_dfs <- modified_dfs <- map2(data_frames, cat_names, add_category_column)
   # bind everything together
-attendance_18_21 <- bind_rows(modified_dfs)
+attendance_18_22 <- bind_rows(modified_dfs)
+
+  # For merging these df's, we need to match up all the variables 
+table(attendance_18_22$Category) # this newer data includes a few more entries, e.g. "Neither male nor female"
+table(attendance_13_18$Demographic.Variable) # I will match to this so we have data for all years
+
+  # clean up (remove)
+rm(list=c("attendance_18_22_all", "attendance_18_22_ELL", "attendance_18_22_ethnicity", "attendance_18_22_ethnicity", 
+          "attendance_18_22_gender", "attendance_18_22_gender", "attendance_18_22_poverty", "attendance_18_22_STH", 
+          "attendance_18_22_SWD", "add_category_column", "cat_names", "data_frames", 
+          "modified_dfs"))
+
+  # remove extra categories from newer data
+attendance_18_22_trimmed <- attendance_18_22 %>% 
+  filter(!Category %in% c("Neither male nor female", "Not STH", "STH"))
+  # check again
+table(attendance_18_22_trimmed$Category)
+table(attendance_13_18$Demographic.Variable) # the categories match up
+
+  # merge all years
+    # first, change name of "Demographic.Variable" to Category
+colnames(attendance_13_18)[6] <- "Category"  
+    # check column names for both df's
+matrix(colnames(attendance_13_18))
+matrix(colnames(attendance_18_22_trimmed))
+    # remove "Demographic.Category" and "demographic category"
+    # also remove "X..Contributing.20..Total.Days", and "X..Contributing.10..Total.Days.and.1..Pres.Day"
+attendance_13_18 <- attendance_13_18[,c(-5,-11)]
+attendance_18_22_trimmed <- attendance_18_22_trimmed[,c(-10,-13)]
+    # check column names for both df's (again)
+matrix(colnames(attendance_13_18))
+matrix(colnames(attendance_18_22_trimmed))
+    # rearrange to match columns
+attendance_18_22_trimmed <- attendance_18_22_trimmed[,c(1:3,5,4,6:11)] %>% 
+  filter(Year != "2018-19") # and remove overlapping year
+    # row bind together 
+attendance_13_22 <- rbind(attendance_13_18, attendance_18_22_trimmed)
+table(attendance_13_22$Year) # over 13,000 observations for each year
+table(attendance_13_22$Grade) # some schools have higher grades
+    # limit observations to grades K-5
+attendance_13_22_k5 <- attendance_13_22 %>% 
+  filter(Grade %in% c("0K", "1", "2", "3", "4","5")) %>% 
+  mutate(across(6:11, ~ gsub(",", "", .))) %>%  # Remove commas
+  mutate(across(6:11, as.numeric)) %>% # convert to numeric
+  arrange(DBN, Category, Year) # arrange data 
+    # clean up (remove)
+rm(list=c("attendance_13_18", "attendance_18_22", "attendance_18_22_trimmed"))
+    
+# test code
+test <-attendance_13_22_k5 %>% 
+  filter(Grade %in% c("0K", "1", "2", "3", "4","5")) %>% 
+  mutate(across(5:10, ~ gsub(",", "", .))) %>%  # Remove commas
+  mutate(across(5:10, as.numeric)) %>% 
+  arrange(DBN, Category, Year)
+test_pct <- test %>% 
+  group_by(DBN, Category, Year) %>% 
+  summarize(chronic_absent_pct = mean(`X..Chronically.Absent.1`, na.rm = T), 
+            .groups = 'drop') 
+
+
+  
+rm(attendance_13_21)  
+
 
 ## DEMOGRAPHIC DATA 
 demographics_13_17 <- read.csv("demographic_snapshot_school_2013-2017.csv")
-# update this: new data that goes until 2024
+# update this: new data that goes until year starting in  2023
 demographics_17_21 <- read.csv("demographic_snapshot_school_2017-2021.csv")
 summary(attendance_13_18)
 summary(attendance_18_22)
 summary(demographics_13_17) # the variable names are sometimes different and whether they are presented as proportions or percents
 summary(demographics_17_21)
 
-table(attendance_13_18$Demographic.Category)
+
 
