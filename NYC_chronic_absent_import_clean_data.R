@@ -20,7 +20,7 @@ library(data.table)
 library(tidyverse)
 library(broom)
 
-### Load Data ####
+### Load & Clean Data ####
   # Load data in from .csv files
   # these are also available as API data from OpenNYC but the data sometimes changes structure...
 ## ATTENDANCE DATA 
@@ -107,18 +107,7 @@ write.csv(attendance_13_22_k5, "clean_attendance_13_22_k5.csv")
   
 ### Checkpoint ####
 
-# Calculate chronic absentee rates and put it in a dataframe
-  # test code
-
-test_pct <- attendance_13_22_k5 %>% 
-  group_by(DBN, School.Name, Year, Demographic.Category, Demographic.Variable) %>% 
-  # chronic absent percent and total per school, per year, per category and variable
-  summarize(chronic_absent_pct = round(mean(`X..Chronically.Absent.1`, na.rm = T),1), 
-            chronic_absent_n = sum(`X..Chronically.Absent`, na.rm=T), 
-            .groups = 'drop') 
-  # need to add demographics so we can know total number of students
-
-
+# graphs in new R script
   
 ## DEMOGRAPHIC DATA 
 demographics_13_17 <- read.csv("demographic_snapshot_school_2013-2017.csv")
