@@ -1,0 +1,135 @@
+---
+title: "Test Graphs - One with Hover Labels"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+
+# load required packages
+library(flexdashboard)
+library(data.table)
+library(tidyverse)
+library(broom)
+library(lubridate)
+library(plotly)
+
+# load saved data
+df_absent <- readRDS("df_absent.rds")
+```
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### Chronic Absenteeism Over Time by Ethnicity
+
+```{r}
+
+# big graph: line by ethnicity, scroll over for details
+ethnicity_graph <- df_absent %>% 
+  filter(Demographic.Category == "Ethnicity") %>% 
+  mutate(Year = ymd(paste0(substr(Year, 1, 4), "-01-01")), # change to data format, taking first year
+         chronic_absent_pct = round(chronic_absent_pct,2)) %>% 
+  ggplot(aes(text = paste(
+      "<b> Year: ", Year, "<br>",
+      "Percent Chronically Absent: ", chronic_absent_pct, "<br>", # change display in hover label
+      "Ethnicity: ", Demographic.Variable))) +
+  # inheret.aes = FALSE for geom_line, otherwise does not show up with custom text
+  geom_line(aes(x =Year, y=chronic_absent_pct, color =Demographic.Variable), inherit.aes = F) +
+  geom_point(aes(x =Year, y=chronic_absent_pct, color=Demographic.Variable)) + 
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+  scale_y_continuous(
+    limits = c(0, 60),       # Start y-axis at 0
+    expand = c(0, 0)         # Prevent padding
+  ) +
+  labs(
+    title = "",
+    x = "Year",
+    y = "Chronic Absenteeism (%)",
+    color = "Ethnicity", 
+    caption = "Note: Add a note here."
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 45, hjust = 1), # Rotate x-axis labels for readability
+    legend.title = element_text(size = 10),
+    legend.text = element_text(size = 9)
+  )
+
+ggplotly(ethnicity_graph, tooltip = "text") # adapts "text" aesthetic from above
+
+
+
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Chart B
+
+```{r}
+
+# top small graph: all students 
+
+df_absent %>% 
+  filter(Demographic.Category == "All Students") %>% 
+  mutate(Year = ymd(paste0(substr(Year, 1, 4), "-01-01"))) %>% # change to data format, taking first year
+  ggplot(aes(x =Year, y=chronic_absent_pct)) +
+  geom_bar(stat="identity") +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+  scale_y_continuous(
+    limits = c(0, 60),       # Start y-axis at 0
+    expand = c(0, 0)         # Prevent padding
+  ) +
+  labs(
+    title = "Chronic Absenteeism Over Time for All Students",
+    x = "Year",
+    y = "Chronic Absenteeism (%)"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 45, hjust = 1), # Rotate x-axis labels for readability
+    legend.title = element_text(size = 10),
+    legend.text = element_text(size = 9)
+  )
+```
+
+### Chart C
+
+```{r}
+
+# bottom small graph: by gender
+
+df_absent %>% 
+  filter(Demographic.Category == "Gender") %>% 
+  mutate(Year = ymd(paste0(substr(Year, 1, 4), "-01-01"))) %>% # change to data format, taking first year
+  ggplot(aes(x =Year, y=chronic_absent_pct, fill = Demographic.Variable)) +
+  geom_bar(stat="identity", position="dodge") +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+  scale_y_continuous(
+    limits = c(0, 60),       # Start y-axis at 0
+    expand = c(0, 0)         # Prevent padding
+  ) +
+  labs(
+    title = "Chronic Absenteeism Over Time By Gender",
+    x = "Year",
+    y = "Chronic Absenteeism (%)", 
+    fill = "Gender"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 45, hjust = 1), # Rotate x-axis labels for readability
+    legend.title = element_text(size = 10),
+    legend.text = element_text(size = 9)
+  )
+
+
+
+```
+
+
