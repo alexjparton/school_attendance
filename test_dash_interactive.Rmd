@@ -24,136 +24,150 @@ df_absent <- readRDS("df_absent.rds")
 
 # Overview
 
-Add text here about the project. This is a decent solution, except maybe the ggplot object could be a function so the whole thing doesn't have to be copy and pasted. 
+**Add text here about the project.** 
 
 Code for help with creating this dashboard here: https://epirhandbook.com/new_pages/flexdashboard.html
 
-# All Students{data-navmenu="Demographic Indicators"}
+**Working On**
+
+total number of students in category
+rates total, by borough, by school district (new variable)
+
+by grade would also be cool 
+
 
 ```{r}
 
 # a few modification to the data frame 
 df_absent <- df_absent %>% 
-  mutate(Year = ymd(paste0(substr(Year, 1, 4), "-01-01")), # change to data format, taking first year
+  mutate(Year = ymd(paste0(substr(Year, 1, 4), "-01-01")), # change to data format, taking first year (lubridate)
          chronic_absent_pct = round(chronic_absent_pct,2)) # round chronic absenteeism rate
 
+# create graph template to use 
+
+template_plot <- function(df, demographic_category) {
+  plot <- df %>%
+    filter(Demographic.Category == demographic_category) %>% # specify which demographic cat below in renderPlotly()
+    ggplot(aes(text = paste(
+      "<b> Year: ", Year, "<br>",
+      "Percent Chronically Absent: ", chronic_absent_pct, "<br>", # this is what we want displayed in the dynamic plot
+      "Variable: ", Demographic.Variable))) +
+    geom_line(aes(x = Year, y = chronic_absent_pct, color = Demographic.Variable), inherit.aes = FALSE) +
+    geom_point(aes(x = Year, y = chronic_absent_pct, color = Demographic.Variable)) +
+    scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+    scale_y_continuous(
+      limits = c(0, 60),
+      expand = c(0, 0)
+    ) +
+    labs(
+      title = "",
+      x = "Year",
+      y = "Chronic Absenteeism (%)",
+      color = ""
+    ) +
+    theme_minimal() +
+    theme(
+      legend.position = "bottom",
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      legend.title = element_text(size = 10),
+      legend.text = element_text(size = 9)
+    )
+  
+  ggplotly(plot, tooltip = "text") # tooltip uses the text above for hover-over info
+}
+
+
 ```
+
+
+# All Students{data-navmenu="Demographic Indicator"}
 
 ### Chronic Absenteeism Rates Over Time for All Students
 
 ```{r}
 
-# big graph: line by ethnicity, scroll over for details
-
-plot_all <- df_absent %>% 
-  filter(Demographic.Category == "All Students") %>% # change to %in% if allowing multiple inputs at once # input$varname
-  ggplot(aes(text = paste(
-      "<b> Year: ", Year, "<br>",
-      "Percent Chronically Absent: ", chronic_absent_pct, "<br>", # change display in hover label
-      "Variable: ", Demographic.Variable))) +
-  # inherit.aes = FALSE for geom_line, otherwise does not show up with custom text
-  geom_line(aes(x =Year, y=chronic_absent_pct, color =Demographic.Variable), inherit.aes = F) +
-  geom_point(aes(x =Year, y=chronic_absent_pct, color=Demographic.Variable)) + 
-  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
-  scale_y_continuous(
-    limits = c(0, 60),       # Start y-axis at 0
-    expand = c(0, 0)         # Prevent padding
-  ) +
-  labs(
-    title = "",
-    x = "Year",
-    y = "Chronic Absenteeism (%)",
-    color = ""
-  ) +
-  theme_minimal() +
-  theme(
-    legend.position = "bottom",
-    axis.text.x = element_text(angle = 45, hjust = 1), # Rotate x-axis labels for readability
-    legend.title = element_text(size = 10),
-    legend.text = element_text(size = 9))
+# use this function with different "Demographic.Variable" to render new dynamic plot from the template created above
 
 renderPlotly({
-  ggplotly(plot_all, tooltip = "text")
-  })
+  template_plot(df_absent, "All Students")
+})
 
-
-# ggplotly(, tooltip = "text") # adapts "text" aesthetic from above
 ```
 
-# Ethnicity{data-navmenu="Demographic Indicators"}
+
+# Ethnicity{data-navmenu="Demographic Indicator"}
 
 ### Chronic Absenteeism Rates Over Time by Ethnicity
 
 ```{r}
 
-plot_ethnicity <- df_absent %>% 
-  filter(Demographic.Category == "Ethnicity") %>% # change to %in% if allowing multiple inputs at once # input$varname
-  ggplot(aes(text = paste(
-      "<b> Year: ", Year, "<br>",
-      "Percent Chronically Absent: ", chronic_absent_pct, "<br>", # change display in hover label
-      "Ethnicity: ", Demographic.Variable))) +
-  # inherit.aes = FALSE for geom_line, otherwise does not show up with custom text
-  geom_line(aes(x =Year, y=chronic_absent_pct, color =Demographic.Variable), inherit.aes = F) +
-  geom_point(aes(x =Year, y=chronic_absent_pct, color=Demographic.Variable)) + 
-  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
-  scale_y_continuous(
-    limits = c(0, 60),       # Start y-axis at 0
-    expand = c(0, 0)         # Prevent padding
-  ) +
-  labs(
-    title = "",
-    x = "Year",
-    y = "Chronic Absenteeism (%)",
-    color = ""
-  ) +
-  theme_minimal() +
-  theme(
-    legend.position = "bottom",
-    axis.text.x = element_text(angle = 45, hjust = 1), # Rotate x-axis labels for readability
-    legend.title = element_text(size = 10),
-    legend.text = element_text(size = 9))
-
 renderPlotly({
-  ggplotly(plot_ethnicity, tooltip = "text")
-  })
+  template_plot(df_absent, "Ethnicity")
+})
 
 ```
 
-# ELL Status{data-navmenu="Demographic Indicators"}
+
+# English Language Learners Status{data-navmenu="Demographic Indicator"}
 
 ### Chronic Absenteeism Rates Over Time by ELL Status
 
 ```{r}
 
-plot_ELL <- df_absent %>% 
-  filter(Demographic.Category == "ELL Status") %>% # change to %in% if allowing multiple inputs at once # input$varname
-  ggplot(aes(text = paste(
-      "<b> Year: ", Year, "<br>",
-      "Percent Chronically Absent: ", chronic_absent_pct, "<br>", # change display in hover label
-      "ELL Status: ", Demographic.Variable))) +
-  # inherit.aes = FALSE for geom_line, otherwise does not show up with custom text
-  geom_line(aes(x =Year, y=chronic_absent_pct, color =Demographic.Variable), inherit.aes = F) +
-  geom_point(aes(x =Year, y=chronic_absent_pct, color=Demographic.Variable)) + 
-  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
-  scale_y_continuous(
-    limits = c(0, 60),       # Start y-axis at 0
-    expand = c(0, 0)         # Prevent padding
-  ) +
-  labs(
-    title = "",
-    x = "Year",
-    y = "Chronic Absenteeism (%)",
-    color = ""
-  ) +
-  theme_minimal() +
-  theme(
-    legend.position = "bottom",
-    axis.text.x = element_text(angle = 45, hjust = 1), # Rotate x-axis labels for readability
-    legend.title = element_text(size = 10),
-    legend.text = element_text(size = 9))
-
 renderPlotly({
-  ggplotly(plot_ELL, tooltip = "text")
-  })
+  template_plot(df_absent, "ELL Status")
+})
 
 ```
+
+# Gender{data-navmenu="Demographic Indicator"}
+
+### Chronic Absenteeism Rates Over Time by Gender
+
+```{r}
+
+renderPlotly({
+  template_plot(df_absent, "Gender")
+})
+
+```
+
+# Poverty{data-navmenu="Demographic Indicator"}
+
+### Chronic Absenteeism Rates Over Time by Poverty Status
+
+```{r}
+
+renderPlotly({
+  template_plot(df_absent, "Poverty")
+})
+
+```
+
+# Students with Disability{data-navmenu="Demographic Indicator"}
+
+### Chronic Absenteeism Rates Over Time by Students with Disability Status
+
+```{r}
+
+renderPlotly({
+  template_plot(df_absent, "SWD Status")
+})
+
+```
+
+# Students in Temporary Housing{data-navmenu="Demographic Indicator"}
+
+### Chronic Absenteeism Rates Over Time by Students in Temporary Housing Status
+
+```{r}
+
+renderPlotly({
+  template_plot(df_absent, "STH Status")
+})
+
+```
+
+# Borough{data-navmenu="Demographic Indicator"}
+
+# Grade{data-navmenu="Demographic Indicator"}
