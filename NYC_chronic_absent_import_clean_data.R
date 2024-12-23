@@ -8,7 +8,6 @@
 # same for any school in any given year, regardless of grade. Open NYC data 
 # does not have demographic data disaggregated by grade. Only the chronic absenteeism
 # rates are available by grade level within schools. 
- 
 
 ### Setup ####
 
