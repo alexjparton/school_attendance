@@ -2,11 +2,9 @@
 
 This project cleans and merges data from Open NYC data to visualize chronic absenteeism in NYC public schools. 
 
-It is a work-in-progress...
+The code creates an interactive dashboard for chronic absenteeism over time by demographic category. 
 
-In progress: 
-
-- Interactive Dashboard for chronic absenteeism over time by demographic category
+Possible future projects: 
 - Map of NYC schools by demographic category and school population
   -- by district
   -- by borough
