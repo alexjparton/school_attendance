@@ -78,7 +78,7 @@ template_plot <- function(df, demographic_category) {
 
 ### Overview
 
-This dashboard shows chronic absenteeism trends for K-5 students in the NYC public school system for the school years starting in 2013 to 2022, for a total of nine years of data. Select the demographic category from the menu on the left. Scroll over the graph for exact figures and other interactive features. 
+This dashboard shows chronic absenteeism trends for K-5 students in the NYC public school system for the school years starting in 2013 to 2022, for a total of ten years of data. Select the demographic category from the menu on the left. Scroll over the graph for exact figures and other interactive features. 
 
 
 ## Row 2 {data-height=400}
