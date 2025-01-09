@@ -1,0 +1,130 @@
+---
+title: "NYC K-5 Chronic Absenteeism Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: scroll
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+
+# load required packages
+library(flexdashboard)
+library(data.table)
+library(tidyverse)
+library(broom)
+library(lubridate)
+library(plotly)
+library(shiny)
+
+# load saved data
+df_absent <- readRDS("df_absent.rds")
+
+# a few modification to the data frame 
+df_absent <- df_absent %>% 
+  mutate(Year = ymd(paste0(substr(Year, 1, 4), "-01-01")), # change to data format, taking first year (lubridate)
+         chronic_absent_pct = round(chronic_absent_pct,2)) # round chronic absenteeism rate
+
+```
+
+## Sidebar {.sidebar}
+
+Select a demographic category to display: 
+
+```{r}
+
+demographic_cat <- unique(df_absent$Demographic.Category) # vector to choose from
+
+# create an input to select from drop down menu
+selectInput("demographic_category", label = "", choices = demographic_cat, selected = demographic_cat[[1]]) 
+
+# create graph template to use 
+
+template_plot <- function(df, demographic_category) {
+  plot <- df %>%
+    filter(Demographic.Category == demographic_category) %>% # this will be determined by the input from the drop down menu
+    ggplot(aes(text = paste(
+      "<b> Year: ", Year, "<br>",
+      "Percent Chronically Absent: ", chronic_absent_pct, "<br>", # this is what we want displayed in the dynamic plot
+      "Variable: ", Demographic.Variable))) +
+    geom_line(aes(x = Year, y = chronic_absent_pct, color = Demographic.Variable), inherit.aes = FALSE) +
+    geom_point(aes(x = Year, y = chronic_absent_pct, color = Demographic.Variable)) +
+    scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+    scale_y_continuous(
+      limits = c(0, 60),
+      expand = c(0, 0)
+    ) +
+    labs(
+      title = str_glue("{input$demographic_category}"), # title will change based on input
+      x = "Year",
+      y = "Chronic Absenteeism (%)",
+      color = ""
+    ) +
+    theme_minimal() +
+    theme(
+      legend.position = "bottom",
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      legend.title = element_text(size = 10),
+      legend.text = element_text(size = 9)
+    )
+  
+  ggplotly(plot, tooltip = "text") # tooltip uses the text above for hover-over info
+}
+
+```
+
+## Row 1
+
+### Overview
+
+This dashboard shows chronic absenteeism trends for K-5 students in the NYC public school system for the school years starting in 2013 to 2022, for a total of nine years of data. Select the demographic category from the menu on the left. Scroll over the graph for exact figures and other interactive features. 
+
+
+## Row 2 {data-height=400}
+
+### Chronic Absenteeism by Demographic Category
+
+
+```{r}
+
+# use this function with to render new dynamic plot from the template created above
+
+renderPlotly({
+  template_plot(df_absent, input$demographic_category) # input was created above using selectInput()
+})
+
+```
+
+## Row 3
+
+### Data and Variable Information
+
+The data is collected by the New York City Department of Education (DOE) and is available via NYC Open Data and NYC Public Schools InfoHub. Chronic absenteeism data includes students in district 1-32, 75 (Special Education), district 79 (Alternative Schools & Programs), charter schools, and home schooling. 
+
+NYC DOE’s definition of chronic absenteeism: “If they have an attendance of 90 percent or less (i.e., students who are absent 10 percent or more of the total days). In order to be included in chronic absenteeism calculations, students must be enrolled for at least 10 days (regardless of whether present or absent) and must have been present for at least 1 day.” 
+
+For visual simplicity, school years are represented by the starting year. Note that a school year starting in 2013 represents the school year 2013-2014 and that a school year starting in 2014 represents the school year 2014-2015, and so on. 
+
+Variable Acronyms: 
+
+ELL = English Language Learners \
+SWD = Student with Disabilities \
+STH = Students in Temporary Housing (This data only available from 2018-2022) \
+
+
+
+## Row 4
+
+### References
+
+Data: 
+
+New York City Department of Education. (2022). 2013-2019 Attendance Results – School. *NYC Open Data*. https://data.cityofnewyork.us/Education/2013-2019-Attendance-Results-School/vww9-qguh/about_data
+
+New York City Department of Education. (2025). End-of-Year Attendance and Chronic Absenteeism Data. _NYC Schools InfoHub_. https://infohub.nyced.org/reports/students-and-schools/school-quality/information-and-data-overview/end-of-year-attendance-and-chronic-absenteeism-data
+
+
+This tutorial was indispensible to creating this dashboard: https://epirhandbook.com/new_pages/flexdashboard.html#shiny
+
+Citation: Batra, Neale, et al. The Epidemiologist R Handbook. 2021.

@@ -20,6 +20,8 @@ library(shiny)
 
 # load saved data
 df_absent <- readRDS("df_absent.rds")
+
+# This script makes an interactive dashboard with a drop down menu from the top. 
 ```
 
 # Overview
